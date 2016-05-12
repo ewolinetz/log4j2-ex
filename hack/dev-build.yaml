@@ -15,14 +15,6 @@ objects:
   metadata:
     labels:
       build: log4j2-ex
-    name: wildfly
-  spec:
-    dockerImageRepository: jboss/wildfly
-- apiVersion: v1
-  kind: ImageStream
-  metadata:
-    labels:
-      build: log4j2-ex
     name: log4j2-ex
   spec: {}
 - apiVersion: v1
@@ -46,7 +38,7 @@ objects:
       dockerStrategy:
         from:
           kind: DockerImage
-          name: jboss/wildfly
+          name: registry.access.redhat.com/jboss-eap-6/eap64-openshift
       type: Docker
     triggers:
     - type: ConfigChange
