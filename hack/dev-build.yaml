@@ -1,0 +1,109 @@
+apiVersion: v1
+kind: "Template"
+metadata:
+  name: log4j2-ex-build-template
+  annotations:
+    description: "Template for creating local builds of log4j2-ex components from source."
+    tags: "infrastructure"
+labels:
+  logging-infra: development
+  provider: openshift
+  component: development
+objects:
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    labels:
+      build: log4j2-ex
+    name: wildfly
+  spec:
+    dockerImageRepository: jboss/wildfly
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    labels:
+      build: log4j2-ex
+    name: log4j2-ex
+  spec: {}
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    labels:
+      build: log4j2-ex-build
+    name: log4j2-ex-build
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: log4j2-ex:latest
+    resources: {}
+    source:
+      git:
+        uri: ${EXAMPLE_FORK_URL}
+        ref: ${EXAMPLE_FORK_BRANCH}
+      type: Git
+    strategy:
+      dockerStrategy:
+        from:
+          kind: DockerImage
+          name: jboss/wildfly
+      type: Docker
+    triggers:
+    - type: ConfigChange
+- apiVersion: "v1"
+  kind: "Template"
+  metadata:
+    name: log4j2-ex-template
+    annotations:
+      description: "Template for log4j2-ex deployment."
+      tags: "infrastructure"
+  labels:
+    provider: openshift
+  objects:
+  -
+    apiVersion: v1
+    kind: "DeploymentConfig"
+    metadata:
+      name: "log4j2-ex"
+      labels:
+        provider: openshift
+    spec:
+      replicas: 1
+      selector:
+        provider: openshift
+      triggers:
+      - type: ConfigChange
+      - type: ImageChange
+        imageChangeParams:
+          automatic: true
+          containerNames:
+          - log4j2-ex
+          from:
+            kind: ImageStreamTag
+            name: log4j2-ex:latest
+      strategy:
+        resources: {}
+        rollingParams:
+          intervalSeconds: 1
+          timeoutSeconds: 600
+          updatePeriodSeconds: 1
+        type: Recreate
+      template:
+        metadata:
+          name: log4j2-ex
+          labels:
+            provider: openshift
+        spec:
+          containers:
+          - name: log4j2-ex
+            image: log4j2-ex
+            imagePullPolicy: Always
+parameters:
+-
+  description: 'URL for log4j2-ex fork'
+  name: EXAMPLE_FORK_URL
+  value: https://github.com/ewolinetz/log4j2-ex
+-
+  description: 'branch for log4j2-ex fork'
+  name: EXAMPLE_FORK_BRANCH
+  value: master
